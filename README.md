@@ -88,3 +88,20 @@ Use "terraform apply"
 Terraform apply
 
 - it should then provision 4 VM's and capture their IP addresses.
+
+Ansible playbook:
+
+There will be 4 main parts that will make up this ansible playbook, with corresponding subsectors for each of the installation of the 4 vm's.
+
+- Jenkins 
+- Sonarqube 
+- Nexus rm 
+- Trivvy 
+
+Jenkins:
+
+This is an ansible playbook to install and configure Jenkins. The first stages of this playbook will install Java, Git and Jenkins. This playbook will install and apply the correct credentials and plugins that are incoded within the script. You will then be able to run, open and use jenkins for its pipeline functions on the given virtual machine and the certain https port it uses.
+
+Sonarqube:
+
+This is an ansible playbook to install and configure sonarqube with the given credentials and plugins, this will be the stage after jenkins within the script of the playbook, which will install Sonarqube with the correct plugins and credentials that are applied within the script. You will then be able to run, open and use Sonarqube for its functions and uses on the designated virtual machine and the appointed https port it uses.
