@@ -1,23 +1,35 @@
 ---
-- hosts: localhost
-  
+- hosts: all
   tasks:
   - name: Install Jenkins
-    become: yes
-    ansible.builtin.yum:
+    ansible.builtin.service:
      name: jenkins 
-     state: latetst
-   
+     state: started
+
+  - name: Disable firewalld
+    ansible.builtin.service:
+     name: firewalld
+     state: stopped
+     enabled: False
+
+  - name: Make sure jenkins service unit is running
+    ansible.builtin.systemd:
+      state: started
+      name: jenkins
+
+  - name: Start service
+    ansible.builtin.service:
+      name: jenkins 
+      state: started
+
   - name: Start Jenkins service
-    ansible.builtin.yum:
-      service:
+    ansible.builtin.service:
       name: jenkins
       state: started
       enabled: yes
 
   - name: Restart Jenkins service
-    ansible.builtin.yum:
-      service:
+    ansible.builtin.service:
       name: jenkins
       state: restarted
       
@@ -48,22 +60,6 @@
      name:
      - git
      state: present
-
-  - name: Disable firewalld
-    ansible.builtin.service:
-     name: firewalld
-     state: stopped
-     enabled: False
-
-  - name: Start service
-    ansible.builtin.service:
-      name: jenkins 
-      state: started
-
-  - name: Make sure jenkins service unit is running
-    ansible.builtin.systemd:
-      state: started
-      name: jenkins
     
   - name: Install configuration-as-code plugin 
     ansible.builtin.service:
@@ -76,12 +72,6 @@
      - sonar
      - github-plugin
      - job-dsl-plugin
-
-  - name: Install Jenkins
-    become: yes
-    ansible.builtin.yum:
-     name: jenkins
-     state: latest
 
   - name: Create a group as sonar
     ansible.builtin.group:
