@@ -28,8 +28,12 @@ data "vsphere_network" "network" {
   datacenter_id = data.vsphere_datacenter.datacenter.id
 }
 
-data "vsphere_resource_pool" "pool" {
-  name          = "EAS-DEV"
+#data "vsphere_resource_pool" "pool" {
+# name          = "EAS-DEV"
+# datacenter_id = data.vsphere_datacenter.datacenter.id
+#}
+data "vsphere_host" "host" {
+  name          = "esxi-04.dev.easlab.co.uk"
   datacenter_id = data.vsphere_datacenter.datacenter.id
 }
 
@@ -46,7 +50,7 @@ locals {
 resource "vsphere_virtual_machine" "vm" {
   count            = length(local.machines)
   name             = local.machines[count.index]
-  resource_pool_id = data.vsphere_resource_pool.pool.id
+  #resource_pool_id = data.vsphere_resource_pool.pool.id
   datastore_id     = data.vsphere_datastore.datastore.id
 
   num_cpus = 2

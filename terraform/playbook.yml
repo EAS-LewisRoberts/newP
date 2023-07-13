@@ -1,5 +1,5 @@
 ---
-- hosts: all
+- hosts: vm
   tasks:
   - name: Install Jenkins
     ansible.builtin.service:
