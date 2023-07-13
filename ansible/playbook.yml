@@ -4,7 +4,17 @@
   roles:
     - install-jenkins 
 
-#- name: Install sonar
-#  hosts: [SonarqubeLR]
-#  roles:
-#   - install-sonar
+- name: Install sonar
+  hosts: [SonarqubeLR1]
+  roles:
+   - install-sonar
+
+- name: Install trivvy
+  hosts: [TrivvyLR1]
+  roles:
+   - install-trivvy
+
+- name: Install Nexus
+  hosts: [TrivvyLR1]
+  roles:
+   - install-nexus

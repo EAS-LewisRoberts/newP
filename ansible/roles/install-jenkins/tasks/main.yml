@@ -1,72 +1,87 @@
 ---
-- name: Install Jenkins
-  ansible.builtin.service:
-    name: jenkins 
-    state: started
+- name: Download Repositroy
+  ansible.builtin.get_url:
+     url: http://pkg.jenkins-ci.org/redhat-stable/jenkins.repo
+     dest: /etc/yum.repos.d/jenkins.repo
 
-- name: Disable firewalld
-  ansible.builtin.service:
-    name: firewalld
-    state: stopped
-    enabled: False
+- name: Import key
+  ansible.builtin.rpm_key:
+    state: present
+    key: https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key
+  
+- name: Upgrade packages
+  ansible.builtin.yum:
+    state: latest   
 
-- name: Make sure jenkins service unit is running
+- name: Install Java 11 OpenJDK
+  ansible.builtin.dnf:
+    name: java-11-openjdk
+    state: latest 
+
+- name: Install Jenkins 
+  ansible.builtin.yum:
+    name: jenkins
+    state: latest
+
+- name: Start Jenkins
   ansible.builtin.systemd:
     state: started
     name: jenkins
 
-- name: Start service
-  ansible.builtin.service:
+- name: Enable Jenkins  
+  ansible.builtin.systemd:
     name: jenkins 
-    state: started
+    enabled: true
+    masked: no
+      
+- name: Allow access to port 8080
+  ansible.posix.firewalld:
+    port: 8080/tcp
+    permanent: true
+    state: enabled
 
-- name: Start Jenkins service
-  ansible.builtin.service:
-    name: jenkins
-    state: started
-    enabled: yes
+- name: Reload service firewalld
+  ansible.builtin.systemd:
+    name: restarted
+    daemon_reload: true
 
-- name: Restart Jenkins service
-  ansible.builtin.service:
-    name: jenkins
-    state: restarted
-    
-- name: Wait for Jenkins to start
-  uri:
-    url: http://localhost:8080/
-    method: GET
-    return_content: yes
-    register: jenkins_output
+- name: Optain Jenkins password 
+  ansible.builtin.shell: cat /var/lib/jenkins/secrets/initialAdminPassword
+  register: jenkins_password
 
-- name: Download Repo file
-  ansible.builtin.get_url: 
-    url: https://pkg.jenkins.io/redhat/jenkins.repo
-    dest: /etc/yum.repos.d/jenkins.repo
-  
-- name: Download and install key
-  ansible.builtin.rpm_key: 
-    key: https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key 
+- name: Install plugin
+  community.general.jenkins_plugin:
+      name: "{{ item }}"
+      url_username: admin
+      url_password: "{{ jenkins_password.stdout }}"
+      url: http://localhost:8080
+      timeout: 90
+  with_items:
+      - github
+      - job-dsl
+      - configuration-as-code
+      - sonar
 
-- name: Install java
-  dnf:
-    name:
-    - java-17-openjdk
-    state: present
-  
+- name: Restart Jenkins server 
+  service: 
+    name: jenkins 
+    state: restarted 
+
 - name: Install git
-  dnf:
-    name:
-    - git
-    state: present
-  
-- name: Install configuration-as-code plugin 
-  ansible.builtin.service:
-    name: JCASC
-    url_username: admin
-    url_password: admin
-    url: http://localhost:8080
-  loop:
-    - configuration-as-code
-    - sonar
-    - github-plugin
-    - job-dsl-plugin
+  ansible.builtin.dnf:
+    name: git
+    state: latest 
+
+- name: Add repository
+  ansible.builtin.yum_repository:
+      name: trivy
+      description: Trivy YUM repo
+      baseurl: https://aquasecurity.github.io/trivy-repo/rpm/releases/$releasever/$basearch/
+      gpgcheck: no
+      enabled: 1
+
+- name: Install trivy
+  yum:
+   name:
+    - trivy
+   state: present  

@@ -1,0 +1,15 @@
+ 
+ 
+#- name: Add repository
+ # ansible.builtin.yum_repository:
+  # name: Trivvy repository
+  #description: Adding Trivvy repository
+  #baseurl: https://aquasecurity.github.io/trivy-repo/rpm/releases/$releasever/$basearch/
+  #gpgcheck: 0
+  #enabled: 1
+
+#- name: Install trivy
+ # yum:
+  # name:
+   # - trivvy
+ # state: present    

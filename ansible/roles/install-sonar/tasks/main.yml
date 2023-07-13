@@ -1,27 +1,146 @@
 ---
-#- name: Create a group as sonar
-    ansible.builtin.group:
-      name: sonar
+- name: Upgrade packages
+  ansible.builtin.yum:
+    state: latest  
 
-  - name: Directory access
-    ansible.builtin.user:
-      group: sonar
-      name: sonar
-      home: /opt/sonarqube
-        
-  - name: Start sonarqube service
-    service:
-      name: sonarqube
-      state: started
-      enabled: yes
+- name: Install tools
+  ansible.builtin.yum:
+    name: 
+    - vim 
+    - wget 
+    state: latest
 
-  - name: Wait for Jenkins to start
-    uri:
-      url: http://localhost:9090/
-      method: GET
-      return_content: yes
-    register: sonarqube_output
+- name: insert values into config file
+  ansible.builtin.blockinfile:
+    path: /etc/security/limits.conf
+    block: |
+      sonarqube   -   nofile   131072
+      sonarqube   -   nproc    8192
+         
+- name: create sonar group
+  ansible.builtin.group:
+    name: sonar
+    state: present
 
-  - name: Restart sonarqube service
-    service:
-      name: sonarqube
+- name: Create user for sonar
+  ansible.builtin.user:
+    name: sonar
+    group: sonar
+
+- name: Install Java 11 OpenJDK
+  ansible.builtin.dnf:
+    name: java-11-openjdk
+    state: latest    
+
+- name: Upgrade packages
+  ansible.builtin.yum:
+    state: latest  
+
+- name: install PostgreSQL Repository
+  ansible.builtin.get_url:
+     url: https://download.postgresql.org/pub/repos/yum/reporpms/EL-7-x86_64/pgdg-redhat-repo-latest.noarch.rpm
+     dest: ./
+
+- name: Disbale postgresql
+  ansible.builtin.dnf:
+    name: PostgreSQL
+    state: absent    
+
+- name: Install packages
+  ansible.builtin.yum:
+    name:
+      - postgresql
+      - postgresql-server
+      - postgresql-contrib
+      - postgresql-libs
+      - python3-psycopg2
+    state: present
+
+- name: Download sonaqube installer files
+  ansible.builtin.get_url:
+    url: https://binaries.sonarsource.com/Distribution/sonarqube/sonarqube-9.1.0.47736.zip
+    dest: /tmp
+
+- name: Create sonarqube directory 
+  ansible.builtin.file:
+    path: /opt/sonarqube 
+    state: directory
+
+- name: Unzip the archive
+  ansible.builtin.unarchive:
+    src: /tmp/sonarqube-9.1.0.47736.zip 
+    dest: /opt/sonarqube
+    remote_src: yes
+
+- name: Create a soanr group 
+  ansible.builtin.group:
+    name: sonar
+    state: present  
+
+- name: Add the user 
+  ansible.builtin.file:
+    path: /opt/sonarqube
+    owner: sonar 
+    group: sonar 
+    recurse: yes
+
+- name: Insert/Update User
+  ansible.builtin.blockinfile:
+    path: /opt/sonarqube/conf/sonar.properties 
+    block: |
+      sonar.jdbc.username=sonar 
+      sonar.jdbc.password=sonar 
+
+- name: Edit the sonar script
+  ansible.builtin.blockinfile:
+    path: /opt/sonarqube/bin/linux-x86-64/sonar.sh
+    block: |
+      RUN_AS_USER=sonar
+
+- name: Create a systemd service file for SonarQube to run as System Startup.
+  ansible.builtin.blockinfile:
+    create: yes
+    path: /etc/systemd/system/sonar.service
+    block: |
+      [Unit]
+      Description=SonarQube service
+      After=syslog.target network.target
+
+      [Service]
+      Type=simple
+      User=sonar
+      Group=sonar
+      PermissionsStartOnly=false
+      ExecStart=/bin/nohup /usr/bin/java -Xms32m -Xmx32m -Djava.net.preferIPv4Stack=true -jar /opt/sonarqube/lib/sonar-application-9.1.0.47736.jar
+      StandardOutput=syslog
+      LimitNOFILE=131072
+      LimitNPROC=8192
+      TimeoutStartSec=5
+      Restart=always
+      SuccessExitStatus=143
+
+      [Install]
+      WantedBy=multi-user.target
+
+- name: Enable sonar service
+  ansible.builtin.systemd:
+    name: sonar
+    enabled: true
+    masked: no
+
+- name: Start sonar service 
+  ansible.builtin.systemd:
+    state: started
+    name: sonar
+
+- name: Allow access to port 9000
+  ansible.posix.firewalld:
+    port: 9000/tcp
+    permanent: true
+    state: enabled
+
+- name: Reload firewalld
+  ansible.builtin.systemd:
+    name: restarted
+    daemon_reload: true
+
