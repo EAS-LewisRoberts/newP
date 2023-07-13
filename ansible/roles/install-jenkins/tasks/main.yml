@@ -1,0 +1,72 @@
+---
+- name: Install Jenkins
+  ansible.builtin.service:
+    name: jenkins 
+    state: started
+
+- name: Disable firewalld
+  ansible.builtin.service:
+    name: firewalld
+    state: stopped
+    enabled: False
+
+- name: Make sure jenkins service unit is running
+  ansible.builtin.systemd:
+    state: started
+    name: jenkins
+
+- name: Start service
+  ansible.builtin.service:
+    name: jenkins 
+    state: started
+
+- name: Start Jenkins service
+  ansible.builtin.service:
+    name: jenkins
+    state: started
+    enabled: yes
+
+- name: Restart Jenkins service
+  ansible.builtin.service:
+    name: jenkins
+    state: restarted
+    
+- name: Wait for Jenkins to start
+  uri:
+    url: http://localhost:8080/
+    method: GET
+    return_content: yes
+    register: jenkins_output
+
+- name: Download Repo file
+  ansible.builtin.get_url: 
+    url: https://pkg.jenkins.io/redhat/jenkins.repo
+    dest: /etc/yum.repos.d/jenkins.repo
+  
+- name: Download and install key
+  ansible.builtin.rpm_key: 
+    key: https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key 
+
+- name: Install java
+  dnf:
+    name:
+    - java-17-openjdk
+    state: present
+  
+- name: Install git
+  dnf:
+    name:
+    - git
+    state: present
+  
+- name: Install configuration-as-code plugin 
+  ansible.builtin.service:
+    name: JCASC
+    url_username: admin
+    url_password: admin
+    url: http://localhost:8080
+  loop:
+    - configuration-as-code
+    - sonar
+    - github-plugin
+    - job-dsl-plugin

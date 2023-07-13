@@ -1,0 +1,10 @@
+---
+- name: Install Jenkins
+  hosts: [JenkinsLR1]
+  roles:
+    - install-jenkins 
+
+#- name: Install sonar
+#  hosts: [SonarqubeLR]
+#  roles:
+#   - install-sonar

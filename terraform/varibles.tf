@@ -2,14 +2,38 @@ variable "vsphere_virtual_machine_template" {
   default = "vm-template"
 }
 
-vsphere_user = "lewis@easlab.co.uk"
-vsphere_password = "Renegade187!"
+variable "vsphere_user" {
+  default = "lewis@easlab.co.uk"
+}
 
-domain = "easlab.co.uk"
-hostname = "lewis"
+variable "vsphere_password" {
+  default = "Renegade187!"
+} 
+  
+variable "domain" {
+  default = "easlab.co.uk"
+}  
 
-vsphere_vcenter= "vcenter.easlab.co.uk"
-vsphere_datastore = "VM_STORAGE"
-vsphere_datacenter = "Development"
-vsphere_network = "VM Network"
-vsphere_compute_cluster = "EAS-DEV" 
+variable "hostname" {
+  default = "lewis"
+}   
+
+variable "vsphere_vcenter" {
+  default = "vcenter.easlab.co.uk"
+}   
+
+variable "vsphere_datastore" {
+  default = "VM_STORAGE"
+}  
+
+variable "vsphere_datacenter" {
+  default = "Development"
+} 
+
+variable "vsphere_network" {
+  default = "VM Network"
+}   
+
+variable "vsphere_compute_cluster" {
+  default = "EAS-DEV"
+}    

@@ -28,12 +28,13 @@ data "vsphere_network" "network" {
   datacenter_id = data.vsphere_datacenter.datacenter.id
 }
 
-#data "vsphere_resource_pool" "pool" {
-# name          = "EAS-DEV"
-# datacenter_id = data.vsphere_datacenter.datacenter.id
-#}
+data "vsphere_resource_pool" "pool" {
+ name          = "EAS-DEV"
+ datacenter_id = data.vsphere_datacenter.datacenter.id
+}
+
 data "vsphere_host" "host" {
-  name          = "esxi-04.dev.easlab.co.uk"
+  name          = "esxi4.dev.easlab.co.uk"
   datacenter_id = data.vsphere_datacenter.datacenter.id
 }
 
@@ -43,15 +44,16 @@ data "vsphere_virtual_machine" "template" {
 }
 
 locals {
-  machines = ["JenkinsLR", "SonarqubeLR", "NexusLR", "TrivvyLR"]
+  machines = ["JenkinsLR1", "SonarqubeLR1", "NexusLR1", "TrivvyLR1"]
 }
 
 # Defining the CentOS virtual machine resource
 resource "vsphere_virtual_machine" "vm" {
   count            = length(local.machines)
   name             = local.machines[count.index]
-  #resource_pool_id = data.vsphere_resource_pool.pool.id
+  resource_pool_id = data.vsphere_resource_pool.pool.id
   datastore_id     = data.vsphere_datastore.datastore.id
+  host_system_id   = data.vsphere_host.host.id
 
   num_cpus = 2
   memory   = 4096
@@ -83,15 +85,15 @@ resource "vsphere_virtual_machine" "vm" {
 
   # Generate inventory file
 resource "local_file" "inventory" {
-  filename = "Users/lewisroberts/Pipeline /terraform/inventory.ini"
+  filename = "inventory.ini"
   content = <<EOF
-  [JenkinsLR]
-  ${vsphere_virtual_machine.vm[0].guest_ip_addresses[0]} 
-  [SonarqubeLR]
-  ${vsphere_virtual_machine.vm[1].guest_ip_addresses[0]}
-  [NexusLR]
-  ${vsphere_virtual_machine.vm[2].guest_ip_addresses[0]}
-  [TrivvyLR]
-  ${vsphere_virtual_machine.vm[3].guest_ip_addresses[0]}
+  [JenkinsLR1]
+  ${vsphere_virtual_machine.vm[0].guest_ip_addresses[0]} ansible_user=root host_key_checking = False
+  [SonarqubeLR1]
+  ${vsphere_virtual_machine.vm[1].guest_ip_addresses[0]} ansible_user=root host_key_checking = False
+  [NexusLR1]
+  ${vsphere_virtual_machine.vm[2].guest_ip_addresses[0]} ansible_user=root host_key_checking = False
+  [TrivvyLR1]
+  ${vsphere_virtual_machine.vm[3].guest_ip_addresses[0]} ansible_user=root host_key_checking = False
   EOF
 }

@@ -1,0 +1,27 @@
+---
+#- name: Create a group as sonar
+    ansible.builtin.group:
+      name: sonar
+
+  - name: Directory access
+    ansible.builtin.user:
+      group: sonar
+      name: sonar
+      home: /opt/sonarqube
+        
+  - name: Start sonarqube service
+    service:
+      name: sonarqube
+      state: started
+      enabled: yes
+
+  - name: Wait for Jenkins to start
+    uri:
+      url: http://localhost:9090/
+      method: GET
+      return_content: yes
+    register: sonarqube_output
+
+  - name: Restart sonarqube service
+    service:
+      name: sonarqube
