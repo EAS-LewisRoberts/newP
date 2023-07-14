@@ -4,12 +4,9 @@
 
 - name: Install tools
   ansible.builtin.yum:
-    name: vim 
-    state: latest
-
-- name: Install tools
-  ansible.builtin.yum:
-    name: wget 
+    name: 
+     - vim 
+     - wget
     state: latest
 
 - name: Install Java 1.8.0 OpenJDK
@@ -133,72 +130,45 @@
      method: GET
      validate_certs: false
   register: result
-  until: result.status == 200
-  retries: 20
-  delay: 20
 
 - name: Using shell module to get the password
   ansible.builtin.shell: cat /opt/nexus/sonatype-work/nexus3/admin.password 
   register: nexus_password
-  
-- name: Create local user account for nexus
-  uri: 
-     url: http://localhost:8081/service/rest/v1/security/users
-     method: POST
-     user: "{{ nexus_username }}"
-     password: "{{ nexus_password }}"
-     validate_certs: false
-     force_basic_auth: true
-     body:
-        userId: "{{ user_id }}"
-        firstName: "{{ first_name }}"
-        lastName: "{{ last_name }}"
-        password: "{{ user_password }}"
-        emailAddress: "{{ emailAddress }}"
-        roles: 
-          - "{{ role_id}}"  
-        status: "{{ status }}"     
-     body_format: json
-     headers:
-         Content-Type: "application/json"
-     return_content: yes
-     status_code: 200
-  register: login 
 
 - name: Create Nexus Repo
   uri: 
     url: "http://localhost:8081/service/rest/v1/repositories/docker/hosted"  
     method: POST 
-    user: "{{ nexus_username }}"
-    password: "{{ nexus_password }}" 
+    user: admin
+    password: admin
     validate_certs: false
     force_basic_auth: true
     body: { "name": "lew-repo",
-            "online": true,
-            "storage": {
-             "blobStoreName": "default",
-             "strictContentTypeValidation": true,
-             "writePolicy": "allow_once",
-             "latestPolicy": true
-            },
-            "component": {
-             "proprietaryComponents": true
-            },
-            "docker": {
-              "v1Enabled": false,
-              "forceBasicAuth": true,
-              "httpPort": 8082,
-              "httpsPort": 8083,
-              "subdomain": "docker-a"
-            } 
-          } 
+     "online": true,
+     "storage": {
+     "blobStoreName": "default",
+     "strictContentTypeValidation": true,
+     "writePolicy": "allow_once",
+     "latestPolicy": true
+     },
+     "component": {
+     "proprietaryComponents": true
+     },
+     "docker": {
+     "v1Enabled": false,
+     "forceBasicAuth": true,
+     "httpPort": 8083,
+     "httpsPort": 8084,
+     "subdomain": "docker-a"
+     } 
+    } 
 
 - name: Create Nexus Role
   uri:
       url: http://localhost:8081/service/rest/v1/security/roles
       method: POST
-      user: "{{ nexus_username }}"
-      password: "{{ nexus_password }}"
+      user: admin
+      password: admin
       validate_certs: false
       force_basic_auth: true
       body_format: json
@@ -214,3 +184,30 @@
       return_content: yes
       status_code: 200
   register: roles
+
+- name: Create local user account for nexus
+  uri: 
+     url: http://localhost:8081/service/rest/v1/security/users
+     method: POST
+     user: "{{ nexus_username }}"
+     password: "{{ nexus_password }}" 
+     validate_certs: false
+     force_basic_auth: true
+     body:
+        userId: "{{ user_id }}"
+        firstName: "{{ first_name }}"
+        lastName: "{{ last_name }}"
+        password: "{{ user_password }}"
+        emailAddress: "{{ emailAddress }}"
+        roles: 
+          - "{{ role_id}}"  
+        status: "{{ status }}"     
+     body_format: json
+     headers:
+        Content-Type: "application/json"
+     return_content: yes
+     status_code: 200
+  register: login 
+
+
+
