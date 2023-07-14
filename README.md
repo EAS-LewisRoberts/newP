@@ -105,3 +105,17 @@ This is an ansible playbook to install and configure Jenkins. The first stages o
 Sonarqube:
 
 This is an ansible playbook to install and configure sonarqube with the given credentials and plugins, this will be the stage after jenkins within the script of the playbook, which will install Sonarqube with the correct plugins and credentials that are applied within the script. You will then be able to run, open and use Sonarqube for its functions and uses on the designated virtual machine and the appointed https port it uses.
+
+Trivy:
+
+This is an ansible playbook that will install and configure trivy with the given credentials and plugins if required, this will be the stage after the installation of sonarqube within the playbook. You will then be able to spin up a vm with trivy already insatalled on it, on the designated virtual machine and the appointed port.
+
+Nexus rm:
+
+This is an ansible playbook that will install and configure Nexus with the given credentials and plugins if required, this will be the stage after the insatllation of Trivy within the playbook. which will install Nexus with the correct pugins and the credentials that are applied within the script, you will then be able to run, open and use tha virtual machine with Nexus for its functions and uses on the designated virtual machine and the appointed https port it uses.
+
+Ansible Playbook:
+
+This playbook should be able to work on any device from the ground up. Menaing that the terraform.tf will provision 4 vm's and grab the ip of those vm's. You will then be able to use your ansible script against the inventory file where the ip addresses of the vm's will be located. Upon running your ansible playbook with the correct roles and modules within it, you should then be able to install each of the softwares onto their designated vm's, and run on the given ports. Upon all 4 vm's installing their required softwares this will be the completion of the project/isatllation.
+
+This is the completion of the 4 provisoning Virtual Machines.
