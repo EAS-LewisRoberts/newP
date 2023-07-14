@@ -1,0 +1,216 @@
+- name: Upgrade all packages
+  ansible.builtin.yum:
+    state: latest  
+
+- name: Install tools
+  ansible.builtin.yum:
+    name: vim 
+    state: latest
+
+- name: Install tools
+  ansible.builtin.yum:
+    name: wget 
+    state: latest
+
+- name: Install Java 1.8.0 OpenJDK
+  ansible.builtin.dnf:
+    name: java-1.8.0-openjdk
+    state: latest  
+
+- name: Create /opt/nexus directory
+  ansible.builtin.file:
+    path: /opt/nexus
+    state: directory
+    mode: '0755'
+
+
+- name: Create /opt/nexusdata directory
+  ansible.builtin.file:
+    path: /opt/nexusdata
+    state: directory
+    mode: '0755'
+
+- name: create nexus group
+  ansible.builtin.group:
+    name: nexus
+    state: present
+
+- name: Create user for sonar
+  ansible.builtin.user:
+    name: nexus
+    group: nexus
+    createhome: no
+
+- name: Download latest nexus artifact
+  get_url:
+    url: http://download.sonatype.com/nexus/3/nexus-3.57.0-01-unix.tar.gz
+    dest: /tmp/nexus.tar.gz
+
+- name: Unzip the archive to /opt/nexus directory
+  ansible.builtin.unarchive:
+    src: /tmp/nexus.tar.gz
+    dest: /opt/nexus
+    remote_src: yes
+
+- name: Edit the nexus.rc
+  lineinfile: 
+    path: /opt/nexus/nexus-3.57.0-01/bin/nexus.rc
+    regexp: '^#RUN_AS_USER='
+    line: 'RUN_AS_USER="nexus"'
+      
+- name: Edit the nexus properties file
+  lineinfile:
+    path: /opt/nexus/nexus-3.57.0-01/etc/nexus-default.properties
+    regexp: '^#nexus.web.host='
+    line: 'nexus.web.host={{ ansible_host }}'
+              
+- name: Edit the nexus properties file
+  lineinfile:
+    path: /opt/nexus/nexus-3.57.0-01/etc/nexus-default.properties
+    regexp: '^#nexus.web.port=8081'
+    line: 'nexus.web.port=8081'
+
+- name: Give permission to /opt/nexus
+  shell:
+    chdir: /opt/nexus
+    cmd: chown -R nexus:nexus /opt/nexus
+
+- name: Give permission to /opt/nexusdata
+  shell:
+    chdir: /opt/nexusdata
+    cmd: chmod -R 0777 /opt/nexusdata
+
+- name: Give user permission /opt/nexusdata
+  shell:
+    chdir: /opt/nexus
+    cmd: chown -R nexus:nexus /opt/nexusdata
+
+- name: Give permission to /opt/nexus
+  shell:
+    chdir: /opt/nexus
+    cmd: chmod -R 0777 /opt/nexus
+
+- name: Create a systemd service/System Startup.
+  ansible.builtin.blockinfile:
+    create: yes
+    path: /etc/systemd/system/nexus.service 
+    block: |
+     [Unit]
+     Description=Nexus Service
+     After=syslog.target network.target
+
+     [Service]
+     Type=forking
+     LimitNOFILE=65536
+     ExecStart=/opt/nexus/nexus-3.57.0-01/bin/nexus start
+     ExecStop=/opt/nexus/nexus-3.57.0-01/bin/nexus stop
+     User=nexus
+     Group=nexus
+     Restart=on-failure
+
+     [Install]
+     WantedBy=multi-user.target
+
+- name: Disable firewalld
+  service:
+    name: firewalld
+    state: stopped
+    enabled: False   
+
+- name: Enable nexus service 
+  ansible.builtin.systemd:
+    name: nexus.service
+    enabled: true
+
+- name: start nexus service 
+  ansible.builtin.systemd:
+    state: started
+    name: nexus.service    
+
+- name: check nexus runs
+  uri: 
+     url: "http://localhost:8081/service/rest/v1/status/" 
+     method: GET
+     validate_certs: false
+  register: result
+  until: result.status == 200
+  retries: 20
+  delay: 20
+
+- name: Using shell module to get the password
+  ansible.builtin.shell: cat /opt/nexus/sonatype-work/nexus3/admin.password 
+  register: nexus_password
+  
+- name: Create local user account for nexus
+  uri: 
+     url: http://localhost:8081/service/rest/v1/security/users
+     method: POST
+     user: "{{ nexus_username }}"
+     password: "{{ nexus_password }}"
+     validate_certs: false
+     force_basic_auth: true
+     body:
+        userId: "{{ user_id }}"
+        firstName: "{{ first_name }}"
+        lastName: "{{ last_name }}"
+        password: "{{ user_password }}"
+        emailAddress: "{{ emailAddress }}"
+        roles: 
+          - "{{ role_id}}"  
+        status: "{{ status }}"     
+     body_format: json
+     headers:
+         Content-Type: "application/json"
+     return_content: yes
+     status_code: 200
+  register: login 
+
+- name: Create Nexus Repo
+  uri: 
+    url: "http://localhost:8081/service/rest/v1/repositories/docker/hosted"  
+    method: POST 
+    user: "{{ nexus_username }}"
+    password: "{{ nexus_password }}" 
+    validate_certs: false
+    force_basic_auth: true
+    body: { "name": "lew-repo",
+            "online": true,
+            "storage": {
+             "blobStoreName": "default",
+             "strictContentTypeValidation": true,
+             "writePolicy": "allow_once",
+             "latestPolicy": true
+            },
+            "component": {
+             "proprietaryComponents": true
+            },
+            "docker": {
+              "v1Enabled": false,
+              "forceBasicAuth": true,
+              "httpPort": 8082,
+              "httpsPort": 8083,
+              "subdomain": "docker-a"
+            } 
+          } 
+
+- name: Create Nexus Role
+  uri:
+      url: http://localhost:8081/service/rest/v1/security/roles
+      method: POST
+      user: "{{ nexus_username }}"
+      password: "{{ nexus_password }}"
+      validate_certs: false
+      force_basic_auth: true
+      body_format: json
+      body:
+          id: "{{ role_id }}"
+          name: "{{ role_name }}"
+          decsription: "role"
+          privileges: 
+              - "nx-repository-view-*-*-*"
+        
+      headers:
+            Content-Type: "application/json"
+      return_content: yes
+      status_code: 200
+  register: roles

@@ -1,0 +1,15 @@
+[Unit]
+Description=Nexus Service
+After=syslog.target network.target
+
+[Service]
+Type=forking
+LimitNOFILE=65536
+ExecStart=/opt/nexus/nexus-3.57.0-01/bin/nexus start
+ExecStop=/opt/nexus/nexus-3.57.0-01/bin/nexus stop
+User=nexus
+Group=nexus
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
