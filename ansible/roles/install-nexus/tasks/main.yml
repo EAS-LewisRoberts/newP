@@ -178,6 +178,8 @@
           decsription: "role"
           privileges: 
               - "nx-repository-view-*-*-*"
+      vars:
+        external_vars_file: /tmp/external_vars.yml
         
       headers:
             Content-Type: "application/json"
