@@ -118,4 +118,4 @@ Ansible Playbook:
 
 This playbook should be able to work on any device from the ground up. Menaing that the terraform.tf will provision 4 vm's and grab the ip of those vm's. You will then be able to use your ansible script against the inventory file where the ip addresses of the vm's will be located. Upon running your ansible playbook with the correct roles and modules within it, you should then be able to install each of the softwares onto their designated vm's, and run on the given ports. Upon all 4 vm's installing their required softwares this will be the completion of the project/isatllation.
 
-This is the completion of the 4 provisoning Virtual Machines.
+This is the completion of the 4 provisoning Virtual Machines with their independent installations.
